@@ -482,6 +482,8 @@ ggplot(hr, aes(x = Temperature, y = A_M, color = Spectral_Class))+
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
+
+
 This is a much cleaner representation of the Hertzprung-Russell Diagram for stars. There were two major pitfalls with the SDSS dataset in this regard: The temperatures were significantly different from expectation, and the magnitude values were not standard absolute magnitudes, and I was unable to convert them to absolute magnitudes. 
 
 ### Smoothed HR Diagram
@@ -499,6 +501,8 @@ ggplot(hr, aes(x = Temperature, y = A_M, color = Spectral_Class))+
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
+
+
 # Conclusions
 
 When I started this project, I set out to map the universe. After a lot of simplifying, I was able to map 10,000 stars across the galaxy. I was able to determine the relationship between temperature and magnitude for stars. After locating another dataaset, I produced a Hertzprung-Russell Diagram of the stars in my sample. The most exciting element of my research was the use of plotly. This project, and this course challenged me to expand my programming abilities and to innovate in ways that I never have before. 
