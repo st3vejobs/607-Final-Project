@@ -18,18 +18,31 @@ library(tidyverse)
 library(plotly)
 ```
 
+# Overview
+
+
 ## Sloan Digital Sky Survey
 
 The Sloan Digital Sky Survey (SDSS) is an ongoing astronomical survey that seeks to map as much of the observable universe as possible. It is the largest astronomical mapping project ever undertaken. Upon completion, SDSS figures to possess 15 terabytes of data on the universe and the billions of stars within it. The SDSS has a full [about page](http://skyserver.sdss.org/dr7/en/sdss/) that is approachable to people of all backgrounds.
 
+## Goals
 
-## Data Collection
+In this project, I aim to:
+
+* Produce a 3D plot of a sample of stars
+* Develop a rudimentary custom classification system
+* Determine the relationship between temperature and magnitude
+* Produce a Hertzprung-Russell Diagram for a sample of stars
+
+# Data Collection
 
 The data is held in a publicly accessible database that can be searched using SQL commands. The data I will be using is obtained from queries performed on the SDSS SkyServer website.  
 
 The first dataset that I collected deals specifically with stars. Because the data are stored in many different tables, it was important to use SQL to join multiple tables to obtain all of the data I wanted.
 
-### 2500 Objects from SEGUE 1: 
+## 2500 Objects from SEGUE 1: 
+
+These 2500 celestial bodies will not be explored in this project because I selected a wider dataframe to study. I have included the query for the 2500 objects as reference.
 
 [SEGUE](https://www.sdss.org/surveys/segue/) stands for Sloan Extension for Galactic Understanding and Exploration.
 
@@ -49,7 +62,7 @@ WHERE sp.seguePrimary = 1
 AND sp.teffadop != -9999
 
 
-### Wider Data Frame of 10,000 Objects from SEGUE 1 and 2
+## Wider Data Frame of 10,000 Objects from SEGUE 1 and 2
 
 
 #### Query:
@@ -67,12 +80,10 @@ JOIN SpecObjAll AS s ON ph.objid = s.bestobjid
 WHERE sp.teffadop != -9999
 
 
-
-
 I chose to filter out any values where the effective adopted temperature was undefined. Further wrangling is necessary to filter out missing or incorrect values. 
 
 
-## Loading the Data
+# Data Preparation
 
 ```{r}
 
@@ -81,7 +92,7 @@ starsraw <- read.csv(url(link), na.strings = "")
 
 ```
 
-### Tidying
+## Tidying
 
 Any entries of -9999 represent NA values. Galaxies and quasars are not objects of interest in this exploration, so they will be omitted. The data obtained from the SQL query should contain mostly stars, but the steps below will confirm that only stars are being considered.
 
@@ -156,11 +167,12 @@ stars <- stars %>%
 
 ```
 
-### Subsetting
 
-Next, I will create multiple long, tidy dataframes to support analysis goals.
+Now that I have arranged the stars dataframe, I will use it to construct different plots and figures.
 
-#### Hertzprung-Russell Diagrams and Absolute Magnitude
+# Analysis
+
+## Hertzprung-Russell Diagrams and Absolute Magnitude
 
 One challenge of this dataset is that in order to approximate absolute magnitude best, it is important to choose the right filter between the u'g'r'i'z filters on the telescope. I will choose filters for each star based on which filter provides the lowest error in magnitude. 
 
@@ -195,22 +207,20 @@ for (idx in 1:nrow(stars)){
 
 ```
 
+### First Attempt HR Diagram
+
+One way HR diagrams are created is by plotting B-V on the x-axis and absolute magnitude (decreasing) on the y-axis. 
 
 ```{r}
 ggplot(HR)+
   geom_point(aes(x = elodieBV, y = mag))+
-  scale_y_reverse(lim = c(26,10))
+  scale_y_reverse(lim = c(26,10))+
+  ggtitle("Incomplete SDSS Hertzprung-Russell Diagram")+
+  xlab("B-V Color")+
+  ylab("Filtered Magnitude")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ```
-
-
-Notes to self
-
-absolute magnitude can be any of the five ugriz filtered magnitudes. They may need to be adjusted depending on the star being studied. 
-u,g,r,i,z are all filters on the telescope
-the filters are not exact, but they provide decent estimates. 
-it may be fine to just average ugriz magnitudes to come up with one number to go with
-for HR we need abs mag and b-v increasing on the x axis
 
 ## Stellar Classification
 
@@ -246,29 +256,7 @@ for (idx in 1:nrow(stars)){
 }
 ```
 
-## Better HR Diagram Data?
-
-## RA/Dec Map
-
-```{r}
-
-ggplot(stars)+
-  geom_point(aes(x = ra, y = dec, color = shane_class))
-
-```
-
-### 3D Plot of Stars using plot_ly ( )
-
-I will use plotly to construct a 3d plot of the stars in the stars data frame with redshift as the z-axis. 
-
-```{r}
-
-plot_ly(stars, x = stars$ra, y = stars$dec, z = stars$redshift, color = stars$shane_class) %>%
-  add_markers()
-
-```
-
-#### Star population by shane_class:
+### Star Population by shane_class:
 
 ```{r}
 
@@ -281,7 +269,7 @@ classcount <- classcount %>%
   arrange(ref)
 
 
-ggplot(classcount, aes(x = ref, y = population, fill = class))+
+ggplot(classcount, aes(x = factor(ref), y = population, fill = class))+
   geom_col()+
   ylab('Population')+
   xlab('Shane Class')+
@@ -290,7 +278,7 @@ ggplot(classcount, aes(x = ref, y = population, fill = class))+
     aes(label = population),
     vjust = 2
   )+
-  scale_x_discrete(limits =1:6, labels = c("1" = "Canadian","2" = "Chilly", "3" = "Sunny","4" = "Tropical","5" = "Equatorial", "6" = "Deadly"))+
+  scale_x_discrete(labels = c("1" = "Canadian","2" = "Chilly", "3" = "Sunny","4" = "Tropical","5" = "Equatorial", "6" = "Deadly"))+
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
@@ -334,8 +322,6 @@ I will now take the stars data and plot variables against one another to see whi
 
 ```{r}
 
-stars <- subset(stars, temp >= 5200 & temp <= 6600)
-
 ggplot(stars, aes(x = metallicity, y = temp, na.rm = TRUE))+
   geom_point(na.rm = TRUE, color = 'deepskyblue')+
   geom_smooth(color = "green")+
@@ -346,11 +332,14 @@ ggplot(stars, aes(x = metallicity, y = temp, na.rm = TRUE))+
   theme(plot.title = element_text(hjust = 0.5, size = 10))
 
 ```
-### Is there a strong relationship between temperature and magnitude in this sample?
+
+
+### Temperature and Magnitude
+
+#### Is there a strong relationship between temperature and magnitude in this sample?
 
 
 ```{r}
-
 
 ggplot(stars, aes(x = temp, y = HR$mag, na.rm = TRUE))+
   geom_point(na.rm = TRUE, color = 'darkorchid4')+
@@ -362,7 +351,10 @@ ggplot(stars, aes(x = temp, y = HR$mag, na.rm = TRUE))+
   theme(plot.title = element_text(hjust = 0.5, size = 10))
 
 ```
+
 This plot is a return to the previous issue presented, the magnitudes are not absolute, which could impact conclusions. There is, however, some very minor evidence of a linear relationship between the two variables. The slope of the fitted line appears to be near zero, which would lead to a nearly constant prediction for magnitude given a temperature. 
+
+### Regression Analysis
 
 ```{r}
 
@@ -395,6 +387,7 @@ ggplot(data = fit, aes(x = .fitted, y = .resid)) +
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
+
 The residuals plot is relatively constantly variable around the axis, with significant clustering between magnitudes 17.2 and 17.3.
 
 ```{r}
@@ -420,6 +413,55 @@ ggplot(data = fit, aes(sample = .resid)) +
 
 The normal probability plot shows a strong linear relationship, with a significant divergence at the higher end of the plot. This is similar to the relationship between magnitude and temperature on Hertzprung-Russell Diagrams, where there is a partially linear relationship between temperature and absolute magnitude among main-sequence stars, with divergence at either end of the spectrum. 
 
+# Visualization
+
+## Right Ascension/Declination Map
+
+Next, I will develop a map of the stars in the sample. I will start by plotting right ascension and declination as x and y on a standard Cartesian plane, then I will expand it to polar, and finally to a 3-D plot. In order to plot right ascension and declination on a Cartesian plane, a [coordinate transformation](https://en.wikipedia.org/wiki/List_of_common_coordinate_transformations#From_polar_coordinates) is required. I will use a radius value of 1 for one 3D plot, and for the other 3D plot I will use a radius value equal to the redshift observed for each star. 
+
+```{r}
+
+stars$coord_x <- cos(stars$ra)*cos(stars$dec)
+stars$coord_y <- sin(stars$ra)*cos(stars$dec)
+stars$coord_z <- sin(stars$dec)
+stars$coord_rz <- stars$redshift*sin(stars$dec)
+
+stars$pol_r <- sqrt((stars$coord_x^2) + (stars$coord_y^2))
+stars$pol_theta <- atan((stars$coord_y/stars$coord_x))
+
+ggplot(stars)+
+  geom_point(aes(x = coord_x, y = coord_y, color = shane_class))
+
+#ggplot(stars, aes(x = coord_x, y = coord_y))+
+  #geom_point(aes(x = coord_x, y = coord_y, color = shane_class))+
+  #coord_polar("x")
+### This code chunk was left here because it produces an interesting shape
+
+ggplot(stars, aes(x = pol_r, y = pol_theta))+
+  geom_point(aes(x = pol_r, y = pol_theta, color = shane_class))+
+  coord_polar("y")
+
+```
+
+### 3D Plot of Stars using plot_ly ( )
+
+I will use plotly to construct 3D plots of the stars in the stars data frame.
+
+```{r}
+
+plot_ly(stars, x = stars$coord_x, y = stars$coord_y, z = stars$coord_z, color = stars$shane_class) %>%
+  add_markers() %>%
+  layout(title = list(text = "Star Map With Uniform Radius = 1", y = 0.98))
+  
+```
+
+```{r}
+
+plot_ly(stars, x = stars$coord_x, y = stars$coord_y, z = stars$coord_rz, color = stars$shane_class) %>%
+  add_markers() %>%
+  layout(title = list(text = "Star Map With Radius = Redshift", y = 0.98))
+```
+
 
 ## Hertzprung-Russell Diagram with a New Dataset
 
@@ -429,34 +471,63 @@ The new dataset I will be using for the accurate Hertzprung-Russell Diagram was 
 
 link <- 'https://raw.githubusercontent.com/st3vejobs/607-Final-Project/main/nasa_HR_set.csv'
 hr <- read.csv(url(link), na.strings = "")
-hr_main <- 1
-  
-  
-ggplot(hr, aes(x = Temperature, y = L))+
+
+ggplot(hr, aes(x = Temperature, y = A_M, color = Spectral_Class))+
   geom_point()+
   scale_x_reverse(lim = c(40000,1000))+
-  coord_trans( y = "log10")
+  scale_y_reverse(lim = c(15, -10))+
+  ggtitle("Hertzprung-Russell Diagram")+
+  xlab("Temperature")+
+  ylab("Absolute Magnitude")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ```
+This is a much cleaner representation of the Hertzprung-Russell Diagram for stars. There were two major pitfalls with the SDSS dataset in this regard: The temperatures were significantly different from expectation, and the magnitude values were not standard absolute magnitudes, and I was unable to convert them to absolute magnitudes. 
 
+### Smoothed HR Diagram
 
+```{r}
 
+ggplot(hr, aes(x = Temperature, y = A_M, color = Spectral_Class))+
+  geom_point()+
+  geom_smooth(color = 'pink', fill = 'green', span = 0.65)+
+  scale_x_reverse(lim = c(40000,1000))+
+  scale_y_reverse(lim = c(15, -10))+
+  ggtitle("Smoothed Hertzprung-Russell Diagram")+
+  xlab("Temperature")+
+  ylab("Absolute Magnitude")+
+  theme(plot.title = element_text(hjust = 0.5))
 
+```
+# Conclusions
 
+When I started this project, I set out to map the universe. After a lot of simplifying, I was able to map 10,000 stars across the galaxy. I was able to determine the relationship between temperature and magnitude for stars. After locating another dataaset, I produced a Hertzprung-Russell Diagram of the stars in my sample. The most exciting element of my research was the use of plotly. This project, and this course challenged me to expand my programming abilities and to innovate in ways that I never have before. 
 
-## Source Links
+# References
 
+Dincer, Baris. “Star Type Classification / NASA.” Kaggle, 2 Apr. 2021, https://www.kaggle.com/brsdincer/star-type-classification. 
 
-https://www.sdss.org/dr12/algorithms/magnitudes/#mag_psf
+“List of Common Coordinate Transformations.” Wikipedia, Wikimedia Foundation, 17 Mar. 2021, https://en.wikipedia.org/wiki/List_of_common_coordinate_transformations#From_polar_coordinates. 
+“Measures of Flux and Magnitude.” SDSS, https://www.sdss.org/dr12/algorithms/magnitudes/#mag_psf. 
 
-https://watermark.silverchair.com/424-2-1584.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAAtgwggLUBgkqhkiG9w0BBwagggLFMIICwQIBADCCAroGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMol7AiO2UYLLN1fQ_AgEQgIICiyht0NuoiTK1BuF4dLkzHxJakrb_Nyl9e6PknPXU4RohBF5SyuGyMLIh7yMP3CskmJ8gpDS7z2q9XQnskBIf_QDZ-N_nl7ZX8sfIK45SGpW5mbVongHGXRl9GtV5phwvc6PlZZTUq2BtmOoxU6_7ulDTZ-0zF6YpapowU96cnmBY7UG6OYyuJsiAFNUO5ZreARBUwggqDKYiF_s6suiYbg_AxCwDGl1dxC_mPVT85HNhrhLmXSypoTPJfQEr6tB68IdTJrERtzUKowNa3lFrasEkYQjKAUwUmZdyC9xgR8CDgvKTGSTAmmOOzaVOkk9krxAMRvDimISDg-6_stvoWbYb2gyMwQGTP2m4g2suv96NZcDwxmzQsm9da2GkRtT-hUawj6LJFfS631ezxOa3ORhKi_Rk18wGrO73FN8MKuW-vCRZEa_uHvIUhJ2SbWeSvKeRUOcJr1cir2LkDL3VyDEaKIWM6TadO1EMTDFjbiJhsOgY_mSLCSBgdYKiTWCURq-Is-AS3qsCtjJw3N860VoqIuirEpSMaRVFsF2rpqe18lSdcgbEo9FHTJ83g6CKDZ_NCNg5GjrTWhxtWAKz5cRfCXFXStCrZbsQz6aD6VbcNkqS2sDOT1LlCU2_DcezhOGE4pCwRRM71jWn2mz56zBhFyws3F1cBwER4CBMOijqBGjkHi4AH7DAeIMOIeqlBukZUvr-p0kJt_a3DKOaMlB8hhSSuCOcXr3APDF3w30WcavQu_K4slsTJgclJr27Y8oTBtmSydsW5-RnLFmEhk5jN3E7JF7YkE9MHuyPCMTPIRPY7_HCzspGWKTZDAe_jHcjoUlL9e3Ti0Swyg-51bD_hZqDLv_lWnupkA
+“Modified Julian Date -- from Eric Weisstein's World of Astronomy.” Scienceworld.wolfram.com, https://scienceworld.wolfram.com/astronomy/ModifiedJulianDate.html. 
 
+SDSS Filters, https://skyserver.sdss.org/dr1/en/proj/advanced/color/sdssfilters.asp. 
 
+SDSS SkyServer DR16, http://skyserver.sdss.org/dr16/en/tools/search/sql.aspx. 
 
-https://skyserver.sdss.org/dr1/en/proj/advanced/color/sdssfilters.asp
+“SEGUE: Mapping The Outer Milky Way.” SDSS, https://www.sdss.org/surveys/segue/. 
 
+“SEGUE Stellar Target Selection: Detailed Selection Criteria.” SDSS, https://www.sdss.org/dr12/algorithms/segue_target_selection_details/#kd. 
 
-https://www.kaggle.com/brsdincer/star-type-classification
+Smith, J. Allyn, et al. (2007). The ugriz Standard-Star System. _The Astronomical Journal, 123(4)._ https://doi.org/10.1086/339311
 
+“What Is the Sloan Digital Sky Survey?” SkyServer, http://skyserver.sdss.org/dr7/en/sdss/. 
+
+### SkyServer
+
+SQL Search Engine for SDSS Data:
+
+http://skyserver.sdss.org/dr16/en/tools/search/sql.aspx
 
 
