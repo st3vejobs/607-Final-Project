@@ -20,6 +20,7 @@ library(plotly)
 
 # Overview
 
+When I seek inspiration, I gaze up to the stars. Throughout history, the sky has been the world's greatest source of inspiration. Seeking to continue reaching for the stars, I began my college career as an astronomy major, but I eventually transitioned to mathematics instead. Over the past few months, I have grown increasingly attracted to the idea of studying astronomy again. After searching for interesting astronomy datasets, I found the Sloan Digital Sky Survey. I first learned about SDSS in my freshman year of college, but I forgot about it until very recently. SDSS has a unique search interface, as it primarily uses SQL commands to generate data. For this project, I want to explore the Sloan Digital Sky Survey and I hope to reestablish a connection with astronomy that I have been missing for years.
 
 ## Sloan Digital Sky Survey
 
